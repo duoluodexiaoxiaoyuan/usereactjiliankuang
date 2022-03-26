@@ -1,7 +1,8 @@
 import { citysData } from "./citysData";
-import { Cascader } from "antd";
+import { Cascader, Descriptions, Image } from "antd";
 import { useEffect } from "react";
 import { useState } from "react";
+import axios from "axios";
 const EpidemicPreventionPolicy = () => {
   const [options, setOptions] = useState([
     {
@@ -23,6 +24,11 @@ const EpidemicPreventionPolicy = () => {
   ]);
   const [startingPoint, setStartingPoint] = useState("");
   const [endingPoint, setEndingPoint] = useState("");
+  const [fromInfo, setFromInfo] = useState("");
+  const [toInfo, setToInfo] = useState("");
+  // 是否显示
+  const [isDisplay, setIsDisplay] = useState(false);
+  const column = 1;
 
   // let options = [
   // {
@@ -132,6 +138,7 @@ const EpidemicPreventionPolicy = () => {
   };
 
   const filter = (inputValue, path) => {
+    console.log(inputValue, path);
     return path.some(
       (option) =>
         option.label.toLowerCase().indexOf(inputValue.toLowerCase()) > -1
@@ -141,17 +148,31 @@ const EpidemicPreventionPolicy = () => {
   // 查询一个地区到另一个地区的防疫政策
   const search = () => {
     console.log(startingPoint, endingPoint);
+    axios
+      .get(
+        `/api?from=${parseInt(startingPoint)}&to=${parseInt(
+          endingPoint
+        )}&key=d7d34becccdde98118252af8a2b3ccd5`
+      )
+      .then((res) => {
+        console.log(res);
+        setFromInfo({ ...res.data.result.from_info });
+        setToInfo({ ...res.data.result.to_info });
+        setIsDisplay(true);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   };
 
   return (
     <div>
-      <div>你好</div>
       <button
         onClick={() => {
           console.log(options);
         }}
       >
-        测试
+        点击测试
       </button>
       <div>
         <span>从</span>
@@ -173,9 +194,49 @@ const EpidemicPreventionPolicy = () => {
           expandTrigger="hover"
           displayRender={displayRender}
           onChange={onChangeEndingPoint}
+          // 这个search是有用的。假如需要调后台接口去查找数据的时候应该就会用到了，相当于比过滤高级点
+          onSearch={(value) => {
+            console.log(value);
+          }}
         />
         <button onClick={search}>查询</button>
       </div>
+      {isDisplay && (
+        <Descriptions title={fromInfo.city_name} column={column}>
+          <Descriptions.Item label="健康码">
+            <span>{fromInfo.health_code_name}</span>
+            <div>
+              <Image width={200} src={fromInfo.health_code_picture} />
+            </div>
+          </Descriptions.Item>
+          <Descriptions.Item label="政策要求">
+            {fromInfo.low_in_desc}
+          </Descriptions.Item>
+          <Descriptions.Item label="建议">
+            {fromInfo.out_desc}
+          </Descriptions.Item>
+          <Descriptions.Item label="省份">
+            {fromInfo.province_name}
+          </Descriptions.Item>
+        </Descriptions>
+      )}
+      {isDisplay && (
+        <Descriptions title={toInfo.city_name} column={column}>
+          <Descriptions.Item label="健康码">
+            <span>{toInfo.health_code_name}</span>
+            <div>
+              <Image width={200} src={toInfo.health_code_picture} />
+            </div>
+          </Descriptions.Item>
+          <Descriptions.Item label="政策要求">
+            {toInfo.low_in_desc}
+          </Descriptions.Item>
+          <Descriptions.Item label="建议">{toInfo.out_desc}</Descriptions.Item>
+          <Descriptions.Item label="省份">
+            {toInfo.province_name}
+          </Descriptions.Item>
+        </Descriptions>
+      )}
     </div>
   );
 };
